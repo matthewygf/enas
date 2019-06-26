@@ -107,3 +107,4 @@ ENV/
 data/cifar10
 cifar-10*
 settings.json
+*.bat

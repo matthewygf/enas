@@ -199,7 +199,7 @@ class Model(object):
     self.train_acc = tf.reduce_sum(self.train_acc)
 
     tf_variables = [var
-        for var in tf.trainable_variables() if var.name.startswith(self.name)]
+        for var in tf.compat.v1.trainable_variabless() if var.name.startswith(self.name)]
     self.num_vars = count_model_params(tf_variables)
     print ("-" * 80)
     for var in tf_variables:

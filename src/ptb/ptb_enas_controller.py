@@ -68,26 +68,26 @@ class PTBEnasController(object):
 
   def _create_params(self):
     initializer = tf.random_uniform_initializer(minval=-0.1, maxval=0.1)
-    with tf.variable_scope(self.name, initializer=initializer):
-      with tf.variable_scope("lstm"):
+    with tf.compat.v1.variable_scope(self.name, initializer=initializer):
+      with tf.compat.v1.variable_scope("lstm"):
         self.w_lstm = []
-        for layer_id in xrange(self.lstm_num_layers):
-          with tf.variable_scope("layer_{}".format(layer_id)):
-            w = tf.get_variable("w", [2 * self.lstm_size, 4 * self.lstm_size])
+        for layer_id in range(self.lstm_num_layers):
+          with tf.compat.v1.variable_scope("layer_{}".format(layer_id)):
+            w = tf.compat.v1.get_variable("w", [2 * self.lstm_size, 4 * self.lstm_size])
             self.w_lstm.append(w)
 
       num_funcs = self.num_funcs
-      with tf.variable_scope("embedding"):
-        self.g_emb = tf.get_variable("g_emb", [1, self.lstm_size])
-        self.w_emb = tf.get_variable("w", [num_funcs, self.lstm_size])
+      with tf.compat.v1.variable_scope("embedding"):
+        self.g_emb = tf.compat.v1.get_variable("g_emb", [1, self.lstm_size])
+        self.w_emb = tf.compat.v1.get_variable("w", [num_funcs, self.lstm_size])
 
-      with tf.variable_scope("softmax"):
-        self.w_soft = tf.get_variable("w", [self.lstm_size, num_funcs])
+      with tf.compat.v1.variable_scope("softmax"):
+        self.w_soft = tf.compat.v1.get_variable("w", [self.lstm_size, num_funcs])
 
-      with tf.variable_scope("attention"):
-        self.attn_w_1 = tf.get_variable("w_1", [self.lstm_size, self.lstm_size])
-        self.attn_w_2 = tf.get_variable("w_2", [self.lstm_size, self.lstm_size])
-        self.attn_v = tf.get_variable("v", [self.lstm_size, 1])
+      with tf.compat.v1.variable_scope("attention"):
+        self.attn_w_1 = tf.compat.v1.get_variable("w_1", [self.lstm_size, self.lstm_size])
+        self.attn_w_2 = tf.compat.v1.get_variable("w_2", [self.lstm_size, self.lstm_size])
+        self.attn_v = tf.compat.v1.get_variable("v", [self.lstm_size, 1])
 
   def _build_sampler(self):
     """Build the sampler ops and the log_prob ops."""
@@ -101,12 +101,12 @@ class PTBEnasController(object):
     # sampler ops
     inputs = self.g_emb
     prev_c, prev_h = [], []
-    for _ in xrange(self.lstm_num_layers):
+    for _ in range(self.lstm_num_layers):
       prev_c.append(tf.zeros([1, self.lstm_size], dtype=tf.float32))
       prev_h.append(tf.zeros([1, self.lstm_size], dtype=tf.float32))
 
     # used = tf.zeros([self.rhn_depth, 2], dtype=tf.int32)
-    for layer_id in xrange(self.rhn_depth):
+    for layer_id in range(self.rhn_depth):
       next_c, next_h = stack_lstm(inputs, prev_c, prev_h, self.w_lstm)
       prev_c, prev_h = next_c, next_h
       all_h.append(next_h[-1])
@@ -196,7 +196,7 @@ class PTBEnasController(object):
     self.train_step = tf.Variable(
         0, dtype=tf.int32, trainable=False, name="train_step")
     tf_variables = [var
-        for var in tf.trainable_variables() if var.name.startswith(self.name)]
+        for var in tf.compat.v1.trainable_variabless() if var.name.startswith(self.name)]
 
     self.train_op, self.lr, self.grad_norm, self.optimizer = get_train_ops(
       self.loss,

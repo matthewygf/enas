@@ -218,12 +218,16 @@ def train():
     images, labels = read_data(FLAGS.data_path, num_valids=0)
 
   g = tf.Graph()
+  run_meta = tf.compat.v1.RunMetadata()
+  #TODO: Profile FLOPs
+  #TODO: Emit parameters and flops to a file etc.
   with g.as_default():
     ops = get_ops(images, labels)
+    tf.compat.v1.logging.info("GOT OPS !  !  !")
     child_ops = ops["child"]
     controller_ops = ops["controller"]
 
-    saver = tf.train.Saver(max_to_keep=2)
+    saver = tf.compat.v1.train.Saver(max_to_keep=2)
     checkpoint_saver_hook = tf.train.CheckpointSaverHook(
       FLAGS.output_dir, save_steps=child_ops["num_train_batches"], saver=saver)
 
@@ -238,7 +242,7 @@ def train():
     print("-" * 80)
     print("Starting session")
     config = tf.ConfigProto(allow_soft_placement=True)
-    with tf.train.SingularMonitoredSession(
+    with tf.compat.v1.train.SingularMonitoredSession(
       config=config, hooks=hooks, checkpoint_dir=FLAGS.output_dir) as sess:
         start_time = time.time()
         while True:
@@ -251,7 +255,6 @@ def train():
           ]
           loss, lr, gn, tr_acc, _ = sess.run(run_ops)
           global_step = sess.run(child_ops["global_step"])
-
           if FLAGS.child_sync_replicas:
             actual_step = global_step * FLAGS.num_aggregate
           else:

@@ -82,46 +82,46 @@ class GeneralController(Controller):
 
   def _create_params(self):
     initializer = tf.random_uniform_initializer(minval=-0.1, maxval=0.1)
-    with tf.variable_scope(self.name, initializer=initializer):
-      with tf.variable_scope("lstm"):
+    with tf.compat.v1.variable_scope(self.name, initializer=initializer):
+      with tf.compat.v1.variable_scope("lstm"):
         self.w_lstm = []
         for layer_id in range(self.lstm_num_layers):
-          with tf.variable_scope("layer_{}".format(layer_id)):
-            w = tf.get_variable(
+          with tf.compat.v1.variable_scope("layer_{}".format(layer_id)):
+            w = tf.compat.v1.get_variable(
               "w", [2 * self.lstm_size, 4 * self.lstm_size])
             self.w_lstm.append(w)
 
-      self.g_emb = tf.get_variable("g_emb", [1, self.lstm_size])
+      self.g_emb = tf.compat.v1.get_variable("g_emb", [1, self.lstm_size])
       if self.search_whole_channels:
-        with tf.variable_scope("emb"):
-          self.w_emb = tf.get_variable(
+        with tf.compat.v1.variable_scope("emb"):
+          self.w_emb = tf.compat.v1.get_variable(
             "w", [self.num_branches, self.lstm_size])
-        with tf.variable_scope("softmax"):
-          self.w_soft = tf.get_variable(
+        with tf.compat.v1.variable_scope("softmax"):
+          self.w_soft = tf.compat.v1.get_variable(
             "w", [self.lstm_size, self.num_branches])
       else:
         self.w_emb = {"start": [], "count": []}
-        with tf.variable_scope("emb"):
+        with tf.compat.v1.variable_scope("emb"):
           for branch_id in range(self.num_branches):
-            with tf.variable_scope("branch_{}".format(branch_id)):
-              self.w_emb["start"].append(tf.get_variable(
+            with tf.compat.v1.variable_scope("branch_{}".format(branch_id)):
+              self.w_emb["start"].append(tf.compat.v1.get_variable(
                 "w_start", [self.out_filters, self.lstm_size]));
-              self.w_emb["count"].append(tf.get_variable(
+              self.w_emb["count"].append(tf.compat.v1.get_variable(
                 "w_count", [self.out_filters - 1, self.lstm_size]));
 
         self.w_soft = {"start": [], "count": []}
-        with tf.variable_scope("softmax"):
+        with tf.compat.v1.variable_scope("softmax"):
           for branch_id in range(self.num_branches):
-            with tf.variable_scope("branch_{}".format(branch_id)):
-              self.w_soft["start"].append(tf.get_variable(
+            with tf.compat.v1.variable_scope("branch_{}".format(branch_id)):
+              self.w_soft["start"].append(tf.compat.v1.get_variable(
                 "w_start", [self.lstm_size, self.out_filters]));
-              self.w_soft["count"].append(tf.get_variable(
+              self.w_soft["count"].append(tf.compat.v1.get_variable(
                 "w_count", [self.lstm_size, self.out_filters - 1]));
 
-      with tf.variable_scope("attention"):
-        self.w_attn_1 = tf.get_variable("w_1", [self.lstm_size, self.lstm_size])
-        self.w_attn_2 = tf.get_variable("w_2", [self.lstm_size, self.lstm_size])
-        self.v_attn = tf.get_variable("v", [self.lstm_size, 1])
+      with tf.compat.v1.variable_scope("attention"):
+        self.w_attn_1 = tf.compat.v1.get_variable("w_1", [self.lstm_size, self.lstm_size])
+        self.w_attn_2 = tf.compat.v1.get_variable("w_2", [self.lstm_size, self.lstm_size])
+        self.v_attn = tf.compat.v1.get_variable("v", [self.lstm_size, 1])
 
   def _build_sampler(self):
     """Build the sampler ops and the log_prob ops."""
@@ -155,7 +155,7 @@ class GeneralController(Controller):
           logit = self.tanh_constant * tf.tanh(logit)
         if self.search_for == "macro" or self.search_for == "branch":
           branch_id = tf.multinomial(logit, 1)
-          branch_id = tf.to_int32(branch_id)
+          branch_id = tf.cast(branch_id, tf.int32)
           branch_id = tf.reshape(branch_id, [1])
         elif self.search_for == "connection":
           branch_id = tf.constant([0], dtype=tf.int32)
@@ -235,13 +235,13 @@ class GeneralController(Controller):
 
         log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(
           logits=logit, labels=skip)
-        log_probs.append(tf.reduce_sum(log_prob, keep_dims=True))
+        log_probs.append(tf.reduce_sum(log_prob, keepdims=True))
 
         entropy = tf.stop_gradient(
-          tf.reduce_sum(log_prob * tf.exp(-log_prob), keep_dims=True))
+          tf.reduce_sum(log_prob * tf.exp(-log_prob), keepdims=True))
         entropys.append(entropy)
 
-        skip = tf.to_float(skip)
+        skip = tf.compat.v1.cast(skip, tf.float32)
         skip = tf.reshape(skip, [1, layer_id])
         skip_count.append(tf.reduce_sum(skip))
         inputs = tf.matmul(skip, tf.concat(anchors, axis=0))
@@ -269,11 +269,11 @@ class GeneralController(Controller):
 
   def build_trainer(self, child_model):
     child_model.build_valid_rl()
-    self.valid_acc = (tf.to_float(child_model.valid_shuffle_acc) /
-                      tf.to_float(child_model.batch_size))
+    self.valid_acc = (tf.cast(child_model.valid_shuffle_acc, tf.float32) /
+                      tf.cast(child_model.batch_size, tf.float32))
     self.reward = self.valid_acc
 
-    normalize = tf.to_float(self.num_layers * (self.num_layers - 1) / 2)
+    normalize = tf.cast(self.num_layers * (self.num_layers - 1) / 2, tf.float32)
     self.skip_rate = tf.to_float(self.skip_count) / normalize
 
     if self.entropy_weight is not None:
@@ -294,7 +294,7 @@ class GeneralController(Controller):
     self.train_step = tf.Variable(
         0, dtype=tf.int32, trainable=False, name="train_step")
     tf_variables = [var
-        for var in tf.trainable_variables() if var.name.startswith(self.name)]
+        for var in tf.compat.v1.trainable_variables() if var.name.startswith(self.name)]
     print ("-" * 80)
     for var in tf_variables:
       print (var)

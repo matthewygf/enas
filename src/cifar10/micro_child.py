@@ -323,7 +323,7 @@ class MicroChild(Model):
               self.aux_logits = aux_logits
 
           aux_head_variables = [
-            var for var in tf.trainable_variables() if (
+            var for var in tf.compat.v1.trainable_variabless() if (
               var.name.startswith(self.name) and "aux_head" in var.name)]
           self.num_aux_vars = count_model_params(aux_head_variables)
           print("Aux head uses {0} params".format(self.num_aux_vars))
@@ -719,7 +719,7 @@ class MicroChild(Model):
     self.train_acc = tf.reduce_sum(self.train_acc)
 
     tf_variables = [
-      var for var in tf.trainable_variables() if (
+      var for var in tf.compat.v1.trainable_variabless() if (
         var.name.startswith(self.name) and "aux_head" not in var.name)]
     self.num_vars = count_model_params(tf_variables)
     print("Model has {0} params".format(self.num_vars))

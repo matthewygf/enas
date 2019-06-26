@@ -66,25 +66,25 @@ class ConvController(Controller):
     self._build_sampler()
 
   def _create_params(self):
-    with tf.variable_scope(self.name):
-      with tf.variable_scope("lstm"):
+    with tf.compat.v1.variable_scope(self.name):
+      with tf.compat.v1.variable_scope("lstm"):
         self.w_lstm = []
         for layer_id in range(self.lstm_num_layers):
-          with tf.variable_scope("layer_{}".format(layer_id)):
-            w = tf.get_variable("w", [2 * self.lstm_size, 4 * self.lstm_size])
+          with tf.compat.v1.variable_scope("layer_{}".format(layer_id)):
+            w = tf.compat.v1.get_variable("w", [2 * self.lstm_size, 4 * self.lstm_size])
             self.w_lstm.append(w)
 
       self.num_configs = (2 ** self.num_blocks_per_branch) - 1
-      with tf.variable_scope("embedding"):
-        self.g_emb = tf.get_variable("g_emb", [1, self.lstm_size])
-        self.w_emb = tf.get_variable("w", [self.num_blocks_per_branch,
+      with tf.compat.v1.variable_scope("embedding"):
+        self.g_emb = tf.compat.v1.get_variable("g_emb", [1, self.lstm_size])
+        self.w_emb = tf.compat.v1.get_variable("w", [self.num_blocks_per_branch,
                                            self.lstm_size])
 
-      with tf.variable_scope("softmax"):
-        self.w_soft = tf.get_variable("w", [self.lstm_size,
+      with tf.compat.v1.variable_scope("softmax"):
+        self.w_soft = tf.compat.v1.get_variable("w", [self.lstm_size,
                                             self.num_blocks_per_branch])
-      with tf.variable_scope("critic"):
-        self.w_critic = tf.get_variable("w", [self.lstm_size, 1])
+      with tf.compat.v1.variable_scope("critic"):
+        self.w_critic = tf.compat.v1.get_variable("w", [self.lstm_size, 1])
 
   def _build_sampler(self):
     """Build the sampler ops and the log_prob ops."""
@@ -167,7 +167,7 @@ class ConvController(Controller):
 
     self.train_step = tf.Variable(
         0, dtype=tf.int32, trainable=False, name="train_step")
-    tf_variables = [var for var in tf.trainable_variables()
+    tf_variables = [var for var in tf.compat.v1.trainable_variabless()
                     if var.name.startswith(self.name)
                       and "w_critic" not in var.name]
     print ("-") * 80

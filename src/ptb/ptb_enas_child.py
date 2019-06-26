@@ -190,7 +190,7 @@ class PTBEnasChild(object):
     self.train_ppl = tf.exp(tf.reduce_mean(log_probs))
 
     tf_variables = [
-      var for var in tf.trainable_variables() if var.name.startswith(self.name)]
+      var for var in tf.compat.v1.trainable_variabless() if var.name.startswith(self.name)]
     self.num_vars = count_model_params(tf_variables)
     print("-" * 80)
     print("Model has {} parameters".format(self.num_vars))
@@ -494,8 +494,8 @@ class PTBEnasChild(object):
     carry_states = []
     reset_states = []
     for layer_id, (s_h, n_h) in enumerate(zip(start_h, next_h)):
-      reset_states.append(tf.assign(s_h, tf.zeros_like(s_h), use_locking=True))
-      carry_states.append(tf.assign(s_h, tf.stop_gradient(n_h), use_locking=True))
+      reset_states.append(tf.compat.v1.assign(s_h, tf.zeros_like(s_h), use_locking=True))
+      carry_states.append(tf.compat.v1.assign(s_h, tf.stop_gradient(n_h), use_locking=True))
 
     if should_carry:
       with tf.control_dependencies(carry_states):
@@ -518,14 +518,14 @@ class PTBEnasChild(object):
           self.w_prev, self.w_skip = [], []
           for layer_id in range(self.lstm_num_layers):
             with tf.variable_scope("layer_{}".format(layer_id)):
-              w_prev = tf.get_variable(
+              w_prev = tf.compat.v1.get_variable(
                 "w_prev",
                 [2 * self.num_funcs * self.lstm_hidden_size,
                  2 * self.lstm_hidden_size])
               w_skip = [None]
               for rhn_layer_id in range(1, self.rhn_depth):
                 with tf.variable_scope("layer_{}".format(rhn_layer_id)):
-                  w = tf.get_variable(
+                  w = tf.compat.v1.get_variable(
                     "w", [self.num_funcs * rhn_layer_id * self.lstm_hidden_size,
                           2 * self.lstm_hidden_size])
                   w_skip.append(w)
@@ -536,19 +536,19 @@ class PTBEnasChild(object):
           self.w_prev, self.w_skip = [], []
           for layer_id in range(self.lstm_num_layers):
             with tf.variable_scope("layer_{}".format(layer_id)):
-              w_prev = tf.get_variable("w_prev", [2 * self.lstm_hidden_size,
+              w_prev = tf.compat.v1.get_variable("w_prev", [2 * self.lstm_hidden_size,
                                                   2 * self.lstm_hidden_size])
               w_skip = [None]
               for rhn_layer_id in range(1, self.rhn_depth):
                 with tf.variable_scope("layer_{}".format(rhn_layer_id)):
-                  w = tf.get_variable("w", [self.lstm_hidden_size,
+                  w = tf.compat.v1.get_variable("w", [self.lstm_hidden_size,
                                             2 * self.lstm_hidden_size])
                   w_skip.append(w)
               self.w_prev.append(w_prev)
               self.w_skip.append(w_skip)
 
       with tf.variable_scope("embedding"):
-        self.w_emb = tf.get_variable(
+        self.w_emb = tf.compat.v1.get_variable(
           "w", [self.vocab_size, self.lstm_hidden_size])
 
       with tf.variable_scope("starting_states"):

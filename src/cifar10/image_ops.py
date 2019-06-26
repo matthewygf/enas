@@ -42,7 +42,7 @@ def conv(x, filter_size, out_filters, stride, name="conv", padding="SAME",
 
 def fully_connected(x, out_size, name="fc", seed=None):
   in_size = x.get_shape()[-1].value
-  with tf.variable_scope(name):
+  with tf.compat.v1.variable_scope(name):
     w = create_weight("w", [in_size, out_size], seed=seed)
   x = tf.matmul(x, w)
   return x
@@ -98,17 +98,17 @@ def batch_norm(x, is_training, name="bn", decay=0.9, epsilon=1e-5,
   else:
     raise NotImplementedError("Unknown data_format {}".format(data_format))
 
-  with tf.variable_scope(name, reuse=None if is_training else True):
-    offset = tf.get_variable(
+  with tf.compat.v1.variable_scope(name, reuse=None if is_training else True):
+    offset = tf.compat.v1.get_variable(
       "offset", shape,
       initializer=tf.constant_initializer(0.0, dtype=tf.float32))
-    scale = tf.get_variable(
+    scale = tf.compat.v1.get_variable(
       "scale", shape,
       initializer=tf.constant_initializer(1.0, dtype=tf.float32))
-    moving_mean = tf.get_variable(
+    moving_mean = tf.compat.v1.get_variable(
       "moving_mean", shape, trainable=False,
       initializer=tf.constant_initializer(0.0, dtype=tf.float32))
-    moving_variance = tf.get_variable(
+    moving_variance = tf.compat.v1.get_variable(
       "moving_variance", shape, trainable=False,
       initializer=tf.constant_initializer(1.0, dtype=tf.float32))
 
@@ -138,20 +138,20 @@ def batch_norm_with_mask(x, is_training, mask, num_channels, name="bn",
   indices = tf.to_int32(indices)
   indices = tf.reshape(indices, [-1])
 
-  with tf.variable_scope(name, reuse=None if is_training else True):
-    offset = tf.get_variable(
+  with tf.compat.v1.variable_scope(name, reuse=None if is_training else True):
+    offset = tf.compat.v1.get_variable(
       "offset", shape,
       initializer=tf.constant_initializer(0.0, dtype=tf.float32))
-    scale = tf.get_variable(
+    scale = tf.compat.v1.get_variable(
       "scale", shape,
       initializer=tf.constant_initializer(1.0, dtype=tf.float32))
     offset = tf.boolean_mask(offset, mask)
     scale = tf.boolean_mask(scale, mask)
 
-    moving_mean = tf.get_variable(
+    moving_mean = tf.compat.v1.get_variable(
       "moving_mean", shape, trainable=False,
       initializer=tf.constant_initializer(0.0, dtype=tf.float32))
-    moving_variance = tf.get_variable(
+    moving_variance = tf.compat.v1.get_variable(
       "moving_variance", shape, trainable=False,
       initializer=tf.constant_initializer(1.0, dtype=tf.float32))
 
