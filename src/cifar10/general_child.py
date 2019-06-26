@@ -573,11 +573,13 @@ class GeneralChild(Model):
         actual_data_format = "channels_first"
 
       if avg_or_max == "avg":
-        x = tf.layers.average_pooling2d(
-          x, [3, 3], [1, 1], "SAME", data_format=actual_data_format)
+        x = tf.compat.v1.keras.layers.AveragePooling2D(
+          (3,3), (1,1), 'SAME', data_format=actual_data_format
+        )(x)
       elif avg_or_max == "max":
-        x = tf.layers.max_pooling2d(
-          x, [3, 3], [1, 1], "SAME", data_format=actual_data_format)
+        x = tf.compat.v1.keras.layers.MaxPooling2D(
+          (3,3), (1,1), 'SAME', data_format=actual_data_format
+        )(x)
       else:
         raise ValueError("Unknown pool {}".format(avg_or_max))
 

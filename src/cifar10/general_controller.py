@@ -177,8 +177,7 @@ class GeneralController(Controller):
             logit /= self.temperature
           if self.tanh_constant is not None:
             logit = self.tanh_constant * tf.tanh(logit)
-          start = tf.multinomial(logit, 1)
-          start = tf.to_int32(start)
+          start = tf.compat.v1.random.categorical(logit, 1, dtype=tf.int32)
           start = tf.reshape(start, [1])
           arc_seq.append(start)
           log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -229,7 +228,7 @@ class GeneralController(Controller):
         arc_seq.append(skip)
 
         skip_prob = tf.sigmoid(logit)
-        kl = skip_prob * tf.log(skip_prob / skip_targets)
+        kl = skip_prob * tf.compat.v1.math.log(skip_prob / skip_targets)
         kl = tf.reduce_sum(kl)
         skip_penaltys.append(kl)
 

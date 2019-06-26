@@ -100,20 +100,20 @@ def batch_norm(x, is_training, name="bn", decay=0.9, epsilon=1e-5,
 
   with tf.compat.v1.variable_scope(name, reuse=None if is_training else True):
     offset = tf.compat.v1.get_variable(
-      "offset", shape,
-      initializer=tf.constant_initializer(0.0, dtype=tf.float32))
+      "offset", shape, dtype=tf.float32,
+      initializer=tf.compat.v1.constant_initializer(0.0))
     scale = tf.compat.v1.get_variable(
-      "scale", shape,
-      initializer=tf.constant_initializer(1.0, dtype=tf.float32))
+      "scale", shape, dtype=tf.float32,
+      initializer=tf.compat.v1.constant_initializer(1.0))
     moving_mean = tf.compat.v1.get_variable(
-      "moving_mean", shape, trainable=False,
-      initializer=tf.constant_initializer(0.0, dtype=tf.float32))
+      "moving_mean", shape, trainable=False, 
+      initializer=tf.compat.v1.constant_initializer(0.0), dtype=tf.float32)
     moving_variance = tf.compat.v1.get_variable(
       "moving_variance", shape, trainable=False,
-      initializer=tf.constant_initializer(1.0, dtype=tf.float32))
+      initializer=tf.compat.v1.constant_initializer(1.0), dtype=tf.float32)
 
     if is_training:
-      x, mean, variance = tf.nn.fused_batch_norm(
+      x, mean, variance = tf.compat.v1.nn.fused_batch_norm(
         x, scale, offset, epsilon=epsilon, data_format=data_format,
         is_training=True)
       update_mean = moving_averages.assign_moving_average(
@@ -123,7 +123,7 @@ def batch_norm(x, is_training, name="bn", decay=0.9, epsilon=1e-5,
       with tf.control_dependencies([update_mean, update_variance]):
         x = tf.identity(x)
     else:
-      x, _, _ = tf.nn.fused_batch_norm(x, scale, offset, mean=moving_mean,
+      x, _, _ = tf.compat.v1.nn.fused_batch_norm(x, scale, offset, mean=moving_mean,
                                        variance=moving_variance,
                                        epsilon=epsilon, data_format=data_format,
                                        is_training=False)
@@ -161,8 +161,8 @@ def batch_norm_with_mask(x, is_training, mask, num_channels, name="bn",
         is_training=True)
       mean = (1.0 - decay) * (tf.boolean_mask(moving_mean, mask) - mean)
       variance = (1.0 - decay) * (tf.boolean_mask(moving_variance, mask) - variance)
-      update_mean = tf.scatter_sub(moving_mean, indices, mean, use_locking=True)
-      update_variance = tf.scatter_sub(
+      update_mean = tf.compat.v1.scatter_sub(moving_mean, indices, mean, use_locking=True)
+      update_variance = tf.compat.v1.scatter_sub(
         moving_variance, indices, variance, use_locking=True)
       with tf.control_dependencies([update_mean, update_variance]):
         x = tf.identity(x)
