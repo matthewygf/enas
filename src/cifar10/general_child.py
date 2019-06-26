@@ -207,8 +207,10 @@ class GeneralChild(Model):
       for layer_id in range(self.num_layers):
         with tf.variable_scope("layer_{0}".format(layer_id)):
           if self.fixed_arc is None:
+            tf.compat.v1.logging.info("using enas layer")
             x = self._enas_layer(layer_id, layers, start_idx, out_filters, is_training)
           else:
+            tf.compat.v1.logging.info("using fixed layer")
             x = self._fixed_layer(layer_id, layers, start_idx, out_filters, is_training)
           layers.append(x)
           if layer_id in self.pool_layers:
@@ -227,7 +229,6 @@ class GeneralChild(Model):
         else:
           start_idx += 2 * self.num_branches + layer_id
         print(layers[-1])
-
       x = global_avg_pool(x, data_format=self.data_format)
       if is_training:
         x = tf.nn.dropout(x, self.keep_prob)

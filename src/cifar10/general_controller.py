@@ -43,7 +43,7 @@ class GeneralController(Controller):
                *args,
                **kwargs):
 
-    print ("-") * 80
+    print ("-" * 80)
     print ("Building ConvController")
 
     self.search_for = search_for
@@ -126,7 +126,7 @@ class GeneralController(Controller):
   def _build_sampler(self):
     """Build the sampler ops and the log_prob ops."""
 
-    print ("-") * 80
+    print ("-" * 80)
     print ("Build controller sampler")
     anchors = []
     anchors_w_1 = []
@@ -295,7 +295,7 @@ class GeneralController(Controller):
         0, dtype=tf.int32, trainable=False, name="train_step")
     tf_variables = [var
         for var in tf.trainable_variables() if var.name.startswith(self.name)]
-    print ("-") * 80
+    print ("-" * 80)
     for var in tf_variables:
       print (var)
 

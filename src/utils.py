@@ -64,11 +64,17 @@ class Logger(object):
     self.terminal = sys.stdout
     self.log = open(output_file, "a")
 
+  def __getattr__(self, attr):
+    return getattr(self.terminal, attr)
+
   def write(self, message):
     self.terminal.write(message)
     self.terminal.flush()
     self.log.write(message)
     self.log.flush()
+  
+  def flush(self):
+    pass
 
 
 def count_model_params(tf_variables):
@@ -121,7 +127,6 @@ def get_train_ops(
       l2_losses.append(tf.reduce_sum(var ** 2))
     l2_loss = tf.add_n(l2_losses)
     loss += l2_reg * l2_loss
-
   grads = tf.gradients(loss, tf_variables)
   grad_norm = tf.global_norm(grads)
 

@@ -104,3 +104,6 @@ ENV/
 
 # mypy
 .mypy_cache/
+data/cifar10
+cifar-10*
+settings.json
