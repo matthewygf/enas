@@ -224,7 +224,7 @@ def train(num_layers):
   #TODO: Profile FLOPs
   #TODO: Emit parameters and flops to a file etc.
   with g.as_default():
-    ops = get_ops(images, labels)
+    ops = get_ops(images, labels, num_layers)
     child_ops = ops["child"]
     controller_ops = ops["controller"]
 
