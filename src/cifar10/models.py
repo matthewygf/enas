@@ -189,8 +189,7 @@ class Model(object):
       print ("")
     print ("{}_accuracy: {:<6.4f}".format(
       eval_set, float(total_acc) / total_exp))
-    if len(res) > 1:
-      print(res[1:])
+    return res
 
   def _build_train(self):
     print ("Build train graph")

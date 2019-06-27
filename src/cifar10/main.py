@@ -6,6 +6,8 @@ import os
 import shutil
 import sys
 import time
+from datetime import datetime
+import csv
 
 import numpy as np
 import tensorflow as tf
@@ -89,7 +91,7 @@ DEFINE_boolean("controller_use_critic", False, "")
 DEFINE_integer("log_every", 50, "How many steps to log")
 DEFINE_integer("eval_every_epochs", 1, "How many epochs to eval")
 
-def get_ops(images, labels):
+def get_ops(images, labels, num_layers):
   """
   Args:
     images: dict with keys {"train", "valid", "test"}.
@@ -111,7 +113,7 @@ def get_ops(images, labels):
     use_aux_heads=FLAGS.child_use_aux_heads,
     cutout_size=FLAGS.child_cutout_size,
     whole_channels=FLAGS.controller_search_whole_channels,
-    num_layers=FLAGS.child_num_layers,
+    num_layers=num_layers,
     num_cells=FLAGS.child_num_cells,
     num_branches=FLAGS.child_num_branches,
     fixed_arc=FLAGS.child_fixed_arc,
@@ -146,7 +148,7 @@ def get_ops(images, labels):
       skip_target=FLAGS.controller_skip_target,
       skip_weight=FLAGS.controller_skip_weight,
       num_cells=FLAGS.child_num_cells,
-      num_layers=FLAGS.child_num_layers,
+      num_layers=num_layers,
       num_branches=FLAGS.child_num_branches,
       out_filters=FLAGS.child_out_filters,
       lstm_size=64,
@@ -211,7 +213,7 @@ def get_ops(images, labels):
   return ops
 
 
-def train():
+def train(num_layers):
   if FLAGS.child_fixed_arc is None:
     images, labels = read_data(FLAGS.data_path)
   else:
@@ -242,11 +244,14 @@ def train():
     print("Starting session")
     config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
     #TODO: Make flops count work
-    opts = (tf.compat.v1.profiler.ProfileOptionBuilder(
-      tf.profiler.ProfileOptionBuilder.float_operation())
-      .with_displaying_options(show_name_regexes=['child*'])
-      .build())
+    # opts = (tf.compat.v1.profiler.ProfileOptionBuilder(
+    #   tf.profiler.ProfileOptionBuilder.float_operation())
+    #   .with_displaying_options(show_name_regexes=['child*'])
+    #   .build())
     
+    best_test_acc = 0.0
+    # map test_acc with sample_arc
+    best_test_acc_sample_arc = {}
 
     with tf.compat.v1.train.SingularMonitoredSession(
       config=config, hooks=hooks, checkpoint_dir=FLAGS.output_dir) as sess:
@@ -326,7 +331,7 @@ def train():
                   print(np.reshape(reduce_arc, [-1]))
                 else:
                   start = 0
-                  for layer_id in range(FLAGS.child_num_layers):
+                  for layer_id in range(num_layers):
                     if FLAGS.controller_search_whole_channels:
                       end = start + 1 + layer_id
                     else:
@@ -338,12 +343,16 @@ def train():
 
             print("Epoch {}: Eval".format(epoch))
             if FLAGS.child_fixed_arc is None:
-              ops["eval_func"](sess, "valid", optional_ops=controller_ops["sample_arc"])
-            ops["eval_func"](sess, "test", optional_ops=controller_ops["sample_arc"])
+              _ = ops["eval_func"](sess, "valid")
+            res = ops["eval_func"](sess, "test", optional_ops=[controller_ops["sample_arc"]])
+            if epoch >= (FLAGS.num_epochs // 2):
+              if best_test_acc < res[0]:
+                best_test_acc = res[0]
+                best_test_acc_sample_arc[best_test_acc] = res[1]
 
           if epoch >= FLAGS.num_epochs:
             break
-
+  return best_test_acc_sample_arc
 
 def main(_):
   print("-" * 80)
@@ -361,7 +370,18 @@ def main(_):
   sys.stdout = Logger(log_file)
 
   utils.print_user_flags()
-  train()
+  for i in range(5, FLAGS.child_num_layers+1):
+    tf.compat.v1.logging.info("Searching with constraint, num_layers: %d" % i)
+    execution_id = datetime.now().strftime('%Y-%m-%d-%H-%M-%S-%f')
+    execution_dir = os.path.join(FLAGS.output_dir, "execution_id")
+    model_file = os.path.join(execution_dir, "models.csv")
+    with open(model_file, 'a+') as f:
+      map_task = train(i)
+      headers = ['accuracy', 'models_arc']
+      writer = csv.DictWriter(f, headers, delimiter=',', lineterminator='\n')
+      writer.writeheader()
+      for k,v in map_task.items():
+        writer.writerow({'accuracy': k, 'models_arc': v})
 
 
 if __name__ == "__main__":
