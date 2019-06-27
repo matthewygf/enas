@@ -9,11 +9,11 @@ python src/cifar10/main.py \
   --data_path="data/cifar10" \
   --output_dir="outputs" \
   --batch_size=128 \
-  --num_epochs=310 \
+  --num_epochs=150 \
   --log_every=50 \
   --eval_every_epochs=1 \
   --child_use_aux_heads \
-  --child_num_layers=12 \
+  --child_num_layers=25 \
   --child_out_filters=36 \
   --child_l2_reg=0.00025 \
   --child_num_branches=6 \

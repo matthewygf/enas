@@ -370,18 +370,19 @@ def main(_):
   sys.stdout = Logger(log_file)
 
   utils.print_user_flags()
-  for i in range(5, FLAGS.child_num_layers+1):
-    tf.compat.v1.logging.info("Searching with constraint, num_layers: %d" % i)
-    execution_id = datetime.now().strftime('%Y-%m-%d-%H-%M-%S-%f')
-    execution_dir = os.path.join(FLAGS.output_dir, "execution_id")
-    model_file = os.path.join(execution_dir, "models.csv")
-    with open(model_file, 'a+') as f:
+  execution_id = datetime.now().strftime('%Y-%m-%d-%H-%M-%S-%f')
+  execution_dir = os.path.join(FLAGS.output_dir, "execution_id")
+  model_file = os.path.join(execution_dir, "models.csv")
+   
+  with open(model_file, 'a+') as f:
+    headers = ['num_layers', 'accuracy', 'models_arc']
+    writer = csv.DictWriter(f, headers, delimiter=',', lineterminator='\n')
+    writer.writeheader()
+    for i in range(5, FLAGS.child_num_layers+1):
+      tf.compat.v1.logging.info("Searching with constraint, num_layers: %d" % i)
       map_task = train(i)
-      headers = ['accuracy', 'models_arc']
-      writer = csv.DictWriter(f, headers, delimiter=',', lineterminator='\n')
-      writer.writeheader()
       for k,v in map_task.items():
-        writer.writerow({'accuracy': k, 'models_arc': v})
+        writer.writerow({'num_layers':i,'accuracy': k, 'models_arc': v})
 
 
 if __name__ == "__main__":
