@@ -381,7 +381,7 @@ def main(_):
       map_task = train(i)
       for k,v in map_task.items():
         writer.writerow({'num_layers':i,'accuracy': k, 'models_arc': v})
-
+      f.flush()
 
 if __name__ == "__main__":
   tf.app.run()
