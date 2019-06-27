@@ -219,8 +219,12 @@ def train(num_layers):
   else:
     images, labels = read_data(FLAGS.data_path, num_valids=0)
 
+
+  best_test_acc = 0.0
+  # map test_acc with sample_arc
+  best_test_acc_sample_arc = {}
+  
   g = tf.Graph()
-  run_meta = tf.compat.v1.RunMetadata()
   #TODO: Profile FLOPs
   #TODO: Emit parameters and flops to a file etc.
   with g.as_default():
@@ -249,9 +253,6 @@ def train(num_layers):
     #   .with_displaying_options(show_name_regexes=['child*'])
     #   .build())
     
-    best_test_acc = 0.0
-    # map test_acc with sample_arc
-    best_test_acc_sample_arc = {}
 
     with tf.compat.v1.train.SingularMonitoredSession(
       config=config, hooks=hooks, checkpoint_dir=FLAGS.output_dir) as sess:
@@ -344,14 +345,16 @@ def train(num_layers):
             print("Epoch {}: Eval".format(epoch))
             if FLAGS.child_fixed_arc is None:
               _ = ops["eval_func"](sess, "valid")
-            res = ops["eval_func"](sess, "test", optional_ops=[controller_ops["sample_arc"]])
+            acc, test_arcs = ops["eval_func"](sess, "test", optional_ops=[controller_ops["sample_arc"]])
             if epoch >= (FLAGS.num_epochs // 2):
-              if best_test_acc < res[0]:
-                best_test_acc = res[0]
-                best_test_acc_sample_arc[best_test_acc] = res[1]
+              if best_test_acc < acc:
+                best_test_acc = acc
+                best_test_acc_sample_arc[best_test_acc] = test_arcs
 
           if epoch >= FLAGS.num_epochs:
             break
+  
+  tf.compat.v1.reset_default_graph()
   return best_test_acc_sample_arc
 
 def main(_):
