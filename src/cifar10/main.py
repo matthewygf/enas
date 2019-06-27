@@ -370,10 +370,8 @@ def main(_):
   sys.stdout = Logger(log_file)
 
   utils.print_user_flags()
-  execution_id = datetime.now().strftime('%Y-%m-%d-%H-%M-%S-%f')
-  execution_dir = os.path.join(FLAGS.output_dir, "execution_id")
-  model_file = os.path.join(execution_dir, "models.csv")
-   
+  model_file = os.path.join(FLAGS.output_dir, "models.csv")
+
   with open(model_file, 'a+') as f:
     headers = ['num_layers', 'accuracy', 'models_arc']
     writer = csv.DictWriter(f, headers, delimiter=',', lineterminator='\n')
