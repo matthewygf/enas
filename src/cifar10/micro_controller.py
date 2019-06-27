@@ -159,8 +159,7 @@ class MicroController(Controller):
           logits /= self.temperature
         if self.tanh_constant is not None:
           logits = self.tanh_constant * tf.tanh(logits)
-        index = tf.multinomial(logits, 1)
-        index = tf.to_int32(index)
+        index = tf.compat.v1.random.categorical(logits, 1, dtype=tf.int32)
         index = tf.reshape(index, [1])
         arc_seq = arc_seq.write(start_id + 2 * i, index)
         curr_log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -183,8 +182,7 @@ class MicroController(Controller):
           logits = op_tanh * tf.tanh(logits)
         if use_bias:
           logits += self.b_soft_no_learn
-        op_id = tf.multinomial(logits, 1)
-        op_id = tf.to_int32(op_id)
+        op_id = tf.compat.v1.random.categorical(logits, 1, dtype=tf.int32)
         op_id = tf.reshape(op_id, [1])
         arc_seq = arc_seq.write(start_id + 2 * i + 1, op_id)
         curr_log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(

@@ -154,8 +154,7 @@ class GeneralController(Controller):
         if self.tanh_constant is not None:
           logit = self.tanh_constant * tf.tanh(logit)
         if self.search_for == "macro" or self.search_for == "branch":
-          branch_id = tf.multinomial(logit, 1)
-          branch_id = tf.cast(branch_id, tf.int32)
+          branch_id = tf.compat.v1.random.categorical(logit, 1, dtype=tf.int32)
           branch_id = tf.reshape(branch_id, [1])
         elif self.search_for == "connection":
           branch_id = tf.constant([0], dtype=tf.int32)
@@ -198,8 +197,7 @@ class GeneralController(Controller):
           mask = tf.reshape(mask, [1, self.out_filters - 1])
           mask = tf.less_equal(mask, self.out_filters-1 - start)
           logit = tf.where(mask, x=logit, y=tf.fill(tf.shape(logit), -np.inf))
-          count = tf.multinomial(logit, 1)
-          count = tf.to_int32(count)
+          count = tf.compat.v1.random.categorical(logit, 1, dtype=tf.int32)
           count = tf.reshape(count, [1])
           arc_seq.append(count + 1)
           log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(
@@ -222,8 +220,7 @@ class GeneralController(Controller):
         if self.tanh_constant is not None:
           logit = self.tanh_constant * tf.tanh(logit)
 
-        skip = tf.multinomial(logit, 1)
-        skip = tf.to_int32(skip)
+        skip = tf.compat.v1.random.categorical(logit, 1, dtype=tf.int32)
         skip = tf.reshape(skip, [layer_id])
         arc_seq.append(skip)
 

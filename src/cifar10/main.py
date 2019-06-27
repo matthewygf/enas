@@ -223,7 +223,6 @@ def train():
   #TODO: Emit parameters and flops to a file etc.
   with g.as_default():
     ops = get_ops(images, labels)
-    tf.compat.v1.logging.info("GOT OPS !  !  !")
     child_ops = ops["child"]
     controller_ops = ops["controller"]
 
@@ -241,7 +240,14 @@ def train():
 
     print("-" * 80)
     print("Starting session")
-    config = tf.ConfigProto(allow_soft_placement=True)
+    config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
+    #TODO: Make flops count work
+    opts = (tf.compat.v1.profiler.ProfileOptionBuilder(
+      tf.profiler.ProfileOptionBuilder.float_operation())
+      .with_displaying_options(show_name_regexes=['child*'])
+      .build())
+    
+
     with tf.compat.v1.train.SingularMonitoredSession(
       config=config, hooks=hooks, checkpoint_dir=FLAGS.output_dir) as sess:
         start_time = time.time()
@@ -253,6 +259,7 @@ def train():
             child_ops["train_acc"],
             child_ops["train_op"],
           ]
+          
           loss, lr, gn, tr_acc, _ = sess.run(run_ops)
           global_step = sess.run(child_ops["global_step"])
           if FLAGS.child_sync_replicas:
@@ -331,8 +338,8 @@ def train():
 
             print("Epoch {}: Eval".format(epoch))
             if FLAGS.child_fixed_arc is None:
-              ops["eval_func"](sess, "valid")
-            ops["eval_func"](sess, "test")
+              ops["eval_func"](sess, "valid", optional_ops=controller_ops["sample_arc"])
+            ops["eval_func"](sess, "test", optional_ops=controller_ops["sample_arc"])
 
           if epoch >= FLAGS.num_epochs:
             break

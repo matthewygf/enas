@@ -146,7 +146,7 @@ class Model(object):
     self.images = images
     self.labels = labels
 
-  def eval_once(self, sess, eval_set, feed_dict=None, verbose=False):
+  def eval_once(self, sess, eval_set, feed_dict=None, verbose=False, optional_ops=None):
     """Expects self.acc and self.global_step to be defined.
 
     Args:
@@ -175,9 +175,13 @@ class Model(object):
 
     total_acc = 0
     total_exp = 0
+    ops = [] 
     for batch_id in range(num_batches):
-      acc = sess.run(acc_op, feed_dict=feed_dict)
-      total_acc += acc
+      ops.append(acc_op)
+      if optional_ops is not None:
+        ops.extend(optional_ops)
+      res = sess.run(ops, feed_dict=feed_dict)
+      total_acc += res[0]
       total_exp += self.eval_batch_size
       if verbose:
         sys.stdout.write("\r{:<5d}/{:>5d}".format(total_acc, total_exp))
@@ -185,6 +189,8 @@ class Model(object):
       print ("")
     print ("{}_accuracy: {:<6.4f}".format(
       eval_set, float(total_acc) / total_exp))
+    if len(res) > 1:
+      print(res[1:])
 
   def _build_train(self):
     print ("Build train graph")

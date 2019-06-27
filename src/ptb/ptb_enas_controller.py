@@ -126,8 +126,7 @@ class PTBEnasController(object):
         diff = tf.to_float(layer_id - tf.range(0, layer_id)) ** 2
         logits -= tf.reshape(diff, [1, layer_id]) / 6.0
 
-        skip_index = tf.multinomial(logits, 1)
-        skip_index = tf.to_int32(skip_index)
+        skip_index = tf.compat.v1.random.categorical(logits, 1, dtype=tf.int32)
         skip_index = tf.reshape(skip_index, [1])
         arc_seq.append(skip_index)
 
@@ -151,8 +150,7 @@ class PTBEnasController(object):
         logits /= self.temperature
       if self.tanh_constant is not None:
         logits = self.tanh_constant * tf.tanh(logits)
-      func = tf.multinomial(logits, 1)
-      func = tf.to_int32(func)
+      func = tf.compat.v1.random.categorical(logits, 1, dtype=tf.int32)
       func = tf.reshape(func, [1])
       arc_seq.append(func)
       log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(

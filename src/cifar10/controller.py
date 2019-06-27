@@ -110,8 +110,7 @@ class ConvController(Controller):
         if self.tanh_constant is not None:
           logits = self.tanh_constant * tf.tanh(logits)
 
-        config_id = tf.multinomial(logits, 1)
-        config_id = tf.to_int32(config_id)
+        config_id = tf.compat.v1.random.categorical(logits, 1, dtype=tf.int32)
         config_id = tf.reshape(config_id, [1])
         arc_seq.append(config_id)
         log_prob = tf.nn.sparse_softmax_cross_entropy_with_logits(
