@@ -161,7 +161,7 @@ class GeneralChild(Model):
       path2 = tf.pad(x, pad_arr)[:, :, 1:, 1:]
       concat_axis = 1
   
-    path2 = tf.nn.avg_pool(
+    path2 = tf.nn.avg_pool2d(
         path2, [1, 1, 1, 1], stride_spec, "VALID", data_format=self.data_format)
     with tf.compat.v1.variable_scope("path2_conv"):
       inp_c = self._get_C(path2)
@@ -642,9 +642,9 @@ class GeneralChild(Model):
       print("Build valid graph")
       logits = self._model(self.x_valid, False, reuse=True)
       self.valid_preds = tf.argmax(logits, axis=1)
-      self.valid_preds = tf.to_int32(self.valid_preds)
+      self.valid_preds = tf.cast(self.valid_preds, tf.int32)
       self.valid_acc = tf.equal(self.valid_preds, self.y_valid)
-      self.valid_acc = tf.to_int32(self.valid_acc)
+      self.valid_acc = tf.cast(self.valid_acc, tf.int32)
       self.valid_acc = tf.reduce_sum(self.valid_acc)
 
   # override
@@ -653,9 +653,9 @@ class GeneralChild(Model):
     print("Build test graph")
     logits = self._model(self.x_test, False, reuse=True)
     self.test_preds = tf.argmax(logits, axis=1)
-    self.test_preds = tf.to_int32(self.test_preds)
+    self.test_preds = tf.cast(self.test_preds, tf.int32)
     self.test_acc = tf.equal(self.test_preds, self.y_test)
-    self.test_acc = tf.to_int32(self.test_acc)
+    self.test_acc = tf.cast(self.test_acc, tf.int32)
     self.test_acc = tf.reduce_sum(self.test_acc)
 
   # override
@@ -680,7 +680,7 @@ class GeneralChild(Model):
 
       def _pre_process(x):
         x = tf.pad(x, [[4, 4], [4, 4], [0, 0]])
-        x = tf.random_crop(x, [32, 32, 3], seed=self.seed)
+        x = tf.image.random_crop(x, [32, 32, 3], seed=self.seed)
         x = tf.image.random_flip_left_right(x, seed=self.seed)
         if self.data_format == "NCHW":
           x = tf.transpose(x, [2, 0, 1])

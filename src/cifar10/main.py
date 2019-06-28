@@ -3,6 +3,8 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+os.environ["CUDA_VISIBLE_DEVICES"]="3"
+
 import shutil
 import sys
 import time
@@ -232,11 +234,14 @@ def train(num_layers):
     child_ops = ops["child"]
     controller_ops = ops["controller"]
 
-    saver = tf.compat.v1.train.Saver(max_to_keep=2)
-    checkpoint_saver_hook = tf.train.CheckpointSaverHook(
-      FLAGS.output_dir, save_steps=child_ops["num_train_batches"], saver=saver)
+    if FLAGS.child_fixed_arc:
+      saver = tf.compat.v1.train.Saver(max_to_keep=2)
+      checkpoint_saver_hook = tf.train.CheckpointSaverHook(
+        FLAGS.output_dir, save_steps=child_ops["num_train_batches"], saver=saver)
+      hooks = [checkpoint_saver_hook]
+    else:
+      hooks = []
 
-    hooks = [checkpoint_saver_hook]
     if FLAGS.child_sync_replicas:
       sync_replicas_hook = child_ops["optimizer"].make_session_run_hook(True)
       hooks.append(sync_replicas_hook)
@@ -246,17 +251,30 @@ def train(num_layers):
 
     print("-" * 80)
     print("Starting session")
-    config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
-    #TODO: Make flops count work
-    # opts = (tf.compat.v1.profiler.ProfileOptionBuilder(
-    #   tf.profiler.ProfileOptionBuilder.float_operation())
-    #   .with_displaying_options(show_name_regexes=['child*'])
-    #   .build())
-    
+    if tf.test.is_built_with_cuda() and tf.test.is_gpu_avaliable():
+      gpu_options = tf.compat.v1.GPUOptions(allow_growth=True)
+    else:
+      gpu_options = None
+    config = tf.compat.v1.ConfigProto(
+      allow_soft_placement=True,
+      gpu_options=gpu_options)
 
     with tf.compat.v1.train.SingularMonitoredSession(
       config=config, hooks=hooks, checkpoint_dir=FLAGS.output_dir) as sess:
         start_time = time.time()
+
+        actual_step = 0
+
+        if FLAGS.child_fixed_arc:
+          opts = (tf.compat.v1.profiler.ProfileOptionBuilder(
+            tf.compat.v1.profiler.ProfileOptionBuilder.float_operation())
+            .with_node_names(show_name_regexes=['*child*'])
+            .build())
+
+          profiler = tf.compat.v1.profiler.Profiler(graph=sess.graph)
+        else:
+          profiler = None
+
         while True:
           run_ops = [
             child_ops["loss"],
@@ -265,9 +283,14 @@ def train(num_layers):
             child_ops["train_acc"],
             child_ops["train_op"],
           ]
-          
+
+          if profiler and actual_step == 5:
+            graph_proto = profiler.profile_name_scope(options=opts)
+            print(graph_proto)
+
           loss, lr, gn, tr_acc, _ = sess.run(run_ops)
           global_step = sess.run(child_ops["global_step"])
+          
           if FLAGS.child_sync_replicas:
             actual_step = global_step * FLAGS.num_aggregate
           else:
@@ -375,16 +398,19 @@ def main(_):
   utils.print_user_flags()
   model_file = os.path.join(FLAGS.output_dir, "models.csv")
 
-  with open(model_file, 'a+') as f:
-    headers = ['num_layers', 'accuracy', 'models_arc']
-    writer = csv.DictWriter(f, headers, delimiter=',', lineterminator='\n')
-    writer.writeheader()
-    for i in range(5, FLAGS.child_num_layers+1):
-      tf.compat.v1.logging.info("Searching with constraint, num_layers: %d" % i)
-      map_task = train(i)
-      for k,v in map_task.items():
-        writer.writerow({'num_layers':i,'accuracy': k, 'models_arc': v})
-      f.flush()
+  if FLAGS.child_fixed_arc is None:
+    with open(model_file, 'a+') as f:
+      headers = ['num_layers', 'accuracy', 'models_arc']
+      writer = csv.DictWriter(f, headers, delimiter=',', lineterminator='\n')
+      writer.writeheader()
+      for i in range(5, FLAGS.child_num_layers+1):
+        tf.compat.v1.logging.info("Searching with constraint, num_layers: %d" % i)
+        map_task = train(i)
+        for k,v in map_task.items():
+          writer.writerow({'num_layers':i,'accuracy': k, 'models_arc': v})
+        f.flush()
+  else:
+    _ = train(FLAGS.child_num_layers)
 
 if __name__ == "__main__":
   tf.app.run()

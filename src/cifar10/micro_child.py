@@ -127,7 +127,7 @@ class MicroChild(Model):
 
     stride_spec = self._get_strides(stride)
     # Skip path 1
-    path1 = tf.nn.avg_pool(
+    path1 = tf.nn.avg_pool2d(
         x, [1, 1, 1, 1], stride_spec, "VALID", data_format=self.data_format)
     with tf.variable_scope("path1_conv"):
       inp_c = self._get_C(path1)
@@ -147,7 +147,7 @@ class MicroChild(Model):
       path2 = tf.pad(x, pad_arr)[:, :, 1:, 1:]
       concat_axis = 1
   
-    path2 = tf.nn.avg_pool(
+    path2 = tf.nn.avg_pool2d(
         path2, [1, 1, 1, 1], stride_spec, "VALID", data_format=self.data_format)
     with tf.variable_scope("path2_conv"):
       inp_c = self._get_C(path2)
@@ -791,7 +791,7 @@ class MicroChild(Model):
 
       def _pre_process(x):
         x = tf.pad(x, [[4, 4], [4, 4], [0, 0]])
-        x = tf.random_crop(x, [32, 32, 3], seed=self.seed)
+        x = tf.image.random_crop(x, [32, 32, 3], seed=self.seed)
         x = tf.image.random_flip_left_right(x, seed=self.seed)
         if self.data_format == "NCHW":
           x = tf.transpose(x, [2, 0, 1])

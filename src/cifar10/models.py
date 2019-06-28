@@ -87,7 +87,7 @@ class Model(object):
 
       def _pre_process(x):
         x = tf.pad(x, [[4, 4], [4, 4], [0, 0]])
-        x = tf.random_crop(x, [32, 32, 3], seed=self.seed)
+        x = tf.image.random_crop(x, [32, 32, 3], seed=self.seed)
         x = tf.image.random_flip_left_right(x, seed=self.seed)
         if self.cutout_size is not None:
           mask = tf.ones([self.cutout_size, self.cutout_size], dtype=tf.int32)
@@ -271,7 +271,7 @@ class Model(object):
 
       def _pre_process(x):
         x = tf.pad(x, [[4, 4], [4, 4], [0, 0]])
-        x = tf.random_crop(x, [32, 32, 3], seed=self.seed)
+        x = tf.image.random_crop(x, [32, 32, 3], seed=self.seed)
         x = tf.image.random_flip_left_right(x, seed=self.seed)
         if self.data_format == "NCHW":
           x = tf.transpose(x, [2, 0, 1])
