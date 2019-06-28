@@ -3,7 +3,8 @@ from __future__ import division
 from __future__ import print_function
 
 import os
-os.environ["CUDA_VISIBLE_DEVICES"]="3"
+if os.name != 'nt':
+  os.environ["CUDA_VISIBLE_DEVICES"]="2"
 
 import shutil
 import sys
@@ -227,8 +228,6 @@ def train(num_layers):
   best_test_acc_sample_arc = {}
   
   g = tf.Graph()
-  #TODO: Profile FLOPs
-  #TODO: Emit parameters and flops to a file etc.
   with g.as_default():
     ops = get_ops(images, labels, num_layers)
     child_ops = ops["child"]
@@ -251,7 +250,7 @@ def train(num_layers):
 
     print("-" * 80)
     print("Starting session")
-    if tf.test.is_built_with_cuda() and tf.test.is_gpu_avaliable():
+    if tf.test.is_built_with_cuda():
       gpu_options = tf.compat.v1.GPUOptions(allow_growth=True)
     else:
       gpu_options = None
@@ -268,7 +267,7 @@ def train(num_layers):
         if FLAGS.child_fixed_arc:
           opts = (tf.compat.v1.profiler.ProfileOptionBuilder(
             tf.compat.v1.profiler.ProfileOptionBuilder.float_operation())
-            .with_node_names(show_name_regexes=['*child*'])
+            .with_node_names(show_name_regexes=['child*'])
             .build())
 
           profiler = tf.compat.v1.profiler.Profiler(graph=sess.graph)
@@ -284,9 +283,9 @@ def train(num_layers):
             child_ops["train_op"],
           ]
 
-          if profiler and actual_step == 5:
+          if profiler and actual_step == 1:
+            tf.compat.v1.logging.info("Start profiling.")
             graph_proto = profiler.profile_name_scope(options=opts)
-            print(graph_proto)
 
           loss, lr, gn, tr_acc, _ = sess.run(run_ops)
           global_step = sess.run(child_ops["global_step"])

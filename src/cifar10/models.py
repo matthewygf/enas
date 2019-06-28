@@ -14,6 +14,10 @@ from src.cifar10.image_ops import global_avg_pool
 from src.utils import count_model_params
 from src.utils import get_train_ops
 
+if os.name == 'nt':
+  NUMTHREADS = 4
+else:
+  NUMTHREADS = 16
 
 class Model(object):
   def __init__(self,
@@ -73,13 +77,13 @@ class Model(object):
       self.num_train_examples = np.shape(images["train"])[0]
       self.num_train_batches = (
         self.num_train_examples + self.batch_size - 1) // self.batch_size
-      x_train, y_train = tf.train.shuffle_batch(
+      x_train, y_train = tf.compat.v1.train.shuffle_batch(
         [images["train"], labels["train"]],
         batch_size=self.batch_size,
         capacity=50000,
         enqueue_many=True,
         min_after_dequeue=0,
-        num_threads=16,
+        num_threads=NUMTHREADS,
         seed=self.seed,
         allow_smaller_final_batch=True,
       )
@@ -117,7 +121,7 @@ class Model(object):
         self.num_valid_batches = (
           (self.num_valid_examples + self.eval_batch_size - 1)
           // self.eval_batch_size)
-        self.x_valid, self.y_valid = tf.train.batch(
+        self.x_valid, self.y_valid = tf.compat.v1.train.batch(
           [images["valid"], labels["valid"]],
           batch_size=self.eval_batch_size,
           capacity=5000,
@@ -133,7 +137,7 @@ class Model(object):
       self.num_test_batches = (
         (self.num_test_examples + self.eval_batch_size - 1)
         // self.eval_batch_size)
-      self.x_test, self.y_test = tf.train.batch(
+      self.x_test, self.y_test = tf.compat.v1.train.batch(
         [images["test"], labels["test"]],
         batch_size=self.eval_batch_size,
         capacity=10000,
@@ -264,7 +268,7 @@ class Model(object):
         capacity=25000,
         enqueue_many=True,
         min_after_dequeue=0,
-        num_threads=16,
+        num_threads=NUMTHREADS,
         seed=self.seed,
         allow_smaller_final_batch=True,
       )
