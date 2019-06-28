@@ -271,8 +271,12 @@ def train(num_layers):
             .build())
 
           profiler = tf.compat.v1.profiler.Profiler(graph=sess.graph)
+          run_meta = tf.compat.v1.RunMetadata()
+          run_options = tf.compat.v1.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
         else:
           profiler = None
+          run_meta = None
+          run_options = None
 
         while True:
           run_ops = [
@@ -283,11 +287,15 @@ def train(num_layers):
             child_ops["train_op"],
           ]
 
-          if profiler and actual_step == 1:
+          if profiler and actual_step == 10:
             tf.compat.v1.logging.info("Start profiling.")
+            loss, lr, gn, tr_acc, _ = sess.run(run_ops, options=run_options, run_meta=run_meta)
+            profiler.add_step(actual_step, run_meta)
             graph_proto = profiler.profile_name_scope(options=opts)
+            profiler.advise()
+          else:
+            loss, lr, gn, tr_acc, _ = sess.run(run_ops)
 
-          loss, lr, gn, tr_acc, _ = sess.run(run_ops)
           global_step = sess.run(child_ops["global_step"])
           
           if FLAGS.child_sync_replicas:
