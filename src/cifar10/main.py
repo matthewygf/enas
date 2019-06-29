@@ -93,6 +93,7 @@ DEFINE_boolean("controller_use_critic", False, "")
 
 DEFINE_integer("log_every", 50, "How many steps to log")
 DEFINE_integer("eval_every_epochs", 1, "How many epochs to eval")
+DEFINE_integer("search_from", 5, "search from which layer up.")
 
 def get_ops(images, labels, num_layers):
   """
@@ -356,28 +357,6 @@ def train(num_layers):
                       float(curr_time - start_time) / 60)
                   print(log_string)
 
-              print("Here are 10 architectures")
-              for _ in range(10):
-                arc, acc = sess.run([
-                  controller_ops["sample_arc"],
-                  controller_ops["valid_acc"],
-                ])
-                if FLAGS.search_for == "micro":
-                  normal_arc, reduce_arc = arc
-                  print(np.reshape(normal_arc, [-1]))
-                  print(np.reshape(reduce_arc, [-1]))
-                else:
-                  start = 0
-                  for layer_id in range(num_layers):
-                    if FLAGS.controller_search_whole_channels:
-                      end = start + 1 + layer_id
-                    else:
-                      end = start + 2 * FLAGS.child_num_branches + layer_id
-                    print(np.reshape(arc[start: end], [-1]))
-                    start = end
-                print("val_acc={:<6.4f}".format(acc))
-                print("-" * 80)
-
             print("Epoch {}: Eval".format(epoch))
             if FLAGS.child_fixed_arc is None:
               _ = ops["eval_func"](sess, "valid")
@@ -420,7 +399,7 @@ def main(_):
       headers = ['num_layers', 'accuracy', 'models_arc']
       writer = csv.DictWriter(f, headers, delimiter=',', lineterminator='\n')
       writer.writeheader()
-      for i in range(5, FLAGS.child_num_layers+1):
+      for i in range(FLAGS.search_from, FLAGS.child_num_layers+1):
         tf.compat.v1.logging.info("Searching with constraint, num_layers: %d" % i)
         map_task = train(i)
         for k,v in map_task.items():
