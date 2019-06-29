@@ -267,14 +267,16 @@ def train(num_layers):
         if FLAGS.child_fixed_arc:
           opts = (tf.compat.v1.profiler.ProfileOptionBuilder(
             tf.compat.v1.profiler.ProfileOptionBuilder.float_operation())
-            .with_node_names(show_name_regexes=['child*'])
+            .with_node_names(
+              start_name_regexes=['child*'],
+              hide_name_regexes=['.*Initializer.*'])
+            .with_file_output('flops_count')
             .build())
 
-          profiler = tf.compat.v1.profiler.Profiler(graph=sess.graph)
           run_meta = tf.compat.v1.RunMetadata()
-          run_options = tf.compat.v1.RunOptions(trace_level=tf.RunOptions.FULL_TRACE)
+          run_options = tf.compat.v1.RunOptions(
+            trace_level=tf.compat.v1.RunOptions.FULL_TRACE)
         else:
-          profiler = None
           run_meta = None
           run_options = None
 
@@ -287,12 +289,16 @@ def train(num_layers):
             child_ops["train_op"],
           ]
 
-          if profiler and actual_step == 10:
+          if FLAGS.child_fixed_arc and actual_step == 1:
             tf.compat.v1.logging.info("Start profiling.")
-            loss, lr, gn, tr_acc, _ = sess.run(run_ops, options=run_options, run_meta=run_meta)
-            profiler.add_step(actual_step, run_meta)
-            graph_proto = profiler.profile_name_scope(options=opts)
-            profiler.advise()
+            loss = sess.run(child_ops["loss"])
+            lr = sess.run(child_ops['lr'])
+            gn = sess.run(child_ops['grad_norm'])
+            train_acc = sess.run(child_ops['train_acc'],
+              options=run_options, run_metadata=run_meta)
+            _ = sess.run(child_ops['train_op'])
+            graph_proto = tf.compat.v1.profiler.profile(graph=g, run_meta=run_meta, options=opts)
+            print(graph_proto.total_float_ops)
           else:
             loss, lr, gn, tr_acc, _ = sess.run(run_ops)
 
@@ -375,12 +381,16 @@ def train(num_layers):
             print("Epoch {}: Eval".format(epoch))
             if FLAGS.child_fixed_arc is None:
               _ = ops["eval_func"](sess, "valid")
-            acc, test_arcs = ops["eval_func"](sess, "test", optional_ops=[controller_ops["sample_arc"]])
-            if epoch >= (FLAGS.num_epochs // 2):
-              if best_test_acc < acc:
-                best_test_acc = acc
-                best_test_acc_sample_arc[best_test_acc] = test_arcs
+              acc, test_arcs = ops["eval_func"](sess, "test", optional_ops=[controller_ops["sample_arc"]])
 
+              if epoch >= (FLAGS.num_epochs // 2):
+                if best_test_acc < acc:
+                  best_test_acc = acc
+                  best_test_acc_sample_arc[best_test_acc] = test_arcs
+            
+            else:
+              acc = ops["eval_func"](sess, "test")
+            
           if epoch >= FLAGS.num_epochs:
             break
   

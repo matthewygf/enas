@@ -192,7 +192,7 @@ class GeneralChild(Model):
   def _model(self, images, is_training, reuse=False):
     with tf.compat.v1.variable_scope(self.name, reuse=reuse):
       layers = []
-
+      
       out_filters = self.out_filters
       with tf.compat.v1.variable_scope("stem_conv"):
         w = create_weight("w", [3, 3, 3, out_filters])
